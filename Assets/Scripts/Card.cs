@@ -1,5 +1,5 @@
-using System.Collections;
 using UnityEngine;
+using System.Collections;
 
 public class Card : MonoBehaviour
 {
@@ -14,10 +14,17 @@ public class Card : MonoBehaviour
     {
         if (isMatched || isFlipped) return;  // Ignore if already matched
 
-        isFlipped = true;
-        StartCoroutine(FlipAnimation());
-
+        Debug.Log("Clicked Card");
+        FlipCard();  // Call FlipCard() instead of handling everything in OnMouseDown
         GameManager.Instance.CardFlipped(this); // Notify GameManager
+    }
+
+    public void FlipCard()
+    {
+        if (isMatched) return; // Ignore if already matched
+
+        isFlipped = !isFlipped; // Toggle state
+        StartCoroutine(FlipAnimation());
     }
 
     IEnumerator FlipAnimation()
@@ -26,16 +33,23 @@ public class Card : MonoBehaviour
         Vector3 startScale = transform.localScale;
         Vector3 endScale = new Vector3(0, startScale.y, startScale.z);
 
-        // Flip animation (scale to 0, swap images, scale back)
-        for (float t = 0; t < duration; t += Time.deltaTime)
+        // Shrink before swapping images
+        for (float t = 0; t < duration / 2; t += Time.deltaTime)
         {
-            transform.localScale = Vector3.Lerp(startScale, endScale, t / duration);
+            transform.localScale = Vector3.Lerp(startScale, endScale, t / (duration / 2));
             yield return null;
         }
 
+        // Swap images
         frontImage.gameObject.SetActive(isFlipped);
         backImage.gameObject.SetActive(!isFlipped);
-        transform.localScale = startScale;
+
+        // Expand back
+        for (float t = 0; t < duration / 2; t += Time.deltaTime)
+        {
+            transform.localScale = Vector3.Lerp(endScale, startScale, t / (duration / 2));
+            yield return null;
+        }
     }
 
     public void SetCard(int id, Sprite sprite)
