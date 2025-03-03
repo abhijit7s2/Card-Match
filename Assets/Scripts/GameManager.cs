@@ -10,12 +10,11 @@ public class GameManager : MonoBehaviour
     public Transform cardContainer;
     public CardData cardData;
 
-    private List<Card> flippedCards = new List<Card>();
-    private List<Card> allCards = new List<Card>();
-
+    private Queue<Card> flipQueue = new Queue<Card>(); // Stores flipped cards  
     private int totalMatches;
     private int currentMatches = 0;
     private int turnsTaken = 0;
+    private bool isChecking = false; // Tracks if a match check is in progress
 
     private void Awake()
     {
@@ -32,7 +31,6 @@ public class GameManager : MonoBehaviour
         UIManager.Instance.UpdateMatchText(currentMatches, totalMatches);
         UIManager.Instance.UpdateTurnText(turnsTaken);
     }
-
 
     void GenerateCards(int rows, int cols)
     {
@@ -62,44 +60,52 @@ public class GameManager : MonoBehaviour
         }
     }
 
-
     public void CardFlipped(Card card)
     {
-        if (flippedCards.Contains(card)) return; // Prevent double flip
-        flippedCards.Add(card);
+        if (flipQueue.Contains(card)) return; // Prevent flipping the same card twice
 
-        if (flippedCards.Count == 2)
+        flipQueue.Enqueue(card); // Add the flipped card to the queue
+
+        if (flipQueue.Count >= 2 && !isChecking) // If there are at least 2 cards and no ongoing check
         {
             turnsTaken++;
-            StartCoroutine(CheckMatch());
             UIManager.Instance.UpdateTurnText(turnsTaken);
+            StartCoroutine(CheckMatch());
         }
     }
 
     IEnumerator CheckMatch()
     {
-        yield return new WaitForSeconds(0.5f);
+        isChecking = true;
 
-        if (flippedCards[0].cardID == flippedCards[1].cardID)
+        while (flipQueue.Count >= 2) // Process pairs in the queue
         {
-            flippedCards[0].SetMatched();
-            flippedCards[1].SetMatched();
-            currentMatches++;
+            Card card1 = flipQueue.Dequeue();
+            Card card2 = flipQueue.Dequeue();
 
-            UIManager.Instance.UpdateMatchText(currentMatches, totalMatches);
+            yield return new WaitForSeconds(0.5f); // Wait before checking match
 
-            if (currentMatches == totalMatches)
+            if (card1.cardID == card2.cardID)
             {
-                UIManager.Instance.ShowVictory();
+                card1.SetMatched();
+                card2.SetMatched();
+                currentMatches++;
+
+                UIManager.Instance.UpdateMatchText(currentMatches, totalMatches);
+
+                if (currentMatches == totalMatches)
+                {
+                    UIManager.Instance.ShowVictory();
+                }
+            }
+            else
+            {
+                card1.FlipCard();
+                card2.FlipCard();
             }
         }
-        else
-        {
-            flippedCards[0].FlipCard(); // Add FlipCard() in Card.cs
-            flippedCards[1].FlipCard();
-        }
 
-        flippedCards.Clear();
+        isChecking = false; // Allow new match checking
     }
 
     void Shuffle(List<int> list)
