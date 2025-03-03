@@ -16,6 +16,9 @@ public class GameManager : MonoBehaviour
     private int turnsTaken = 0;
     private bool isChecking = false; // Tracks if a match check is in progress
 
+    private int rows;
+    private int columns;
+
     private void Awake()
     {
         if (Instance == null)
@@ -26,13 +29,13 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        GenerateCards(5, 6);
-        totalMatches = (5 * 6) / 2;
-        UIManager.Instance.UpdateMatchText(currentMatches, totalMatches);
-        UIManager.Instance.UpdateTurnText(turnsTaken);
+        //GenerateCards(5, 6);
+        //totalMatches = (5 * 6) / 2;
+        //UIManager.Instance.UpdateMatchText(currentMatches, totalMatches);
+        //UIManager.Instance.UpdateTurnText(turnsTaken);
     }
 
-    void GenerateCards(int rows, int cols)
+    public void GenerateCards(int rows, int cols)
     {
         List<int> cardIDs = new List<int>();
 
@@ -89,7 +92,14 @@ public class GameManager : MonoBehaviour
         }
     }
 
-
+    public void SetGameParameters(int rows, int columns)
+    {
+        this.rows = rows;
+        this.columns = columns;
+        totalMatches = (rows * columns) / 2;
+        UIManager.Instance.UpdateMatchText(currentMatches, totalMatches);
+        UIManager.Instance.UpdateTurnText(turnsTaken);
+    }
     public void CardFlipped(Card card)
     {
         if (flipQueue.Contains(card)) return; // Prevent flipping the same card twice
