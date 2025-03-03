@@ -26,8 +26,8 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        GenerateCards(3, 4);
-        totalMatches = (3 * 4) / 2;
+        GenerateCards(5, 6);
+        totalMatches = (5 * 6) / 2;
         UIManager.Instance.UpdateMatchText(currentMatches, totalMatches);
         UIManager.Instance.UpdateTurnText(turnsTaken);
     }
@@ -44,21 +44,51 @@ public class GameManager : MonoBehaviour
 
         Shuffle(cardIDs);
 
-        float spacingX = 2.0f, spacingY = 2.5f; // Adjust based on sprite size
-        Vector3 startPos = new Vector3(-cols / 2.0f, rows / 2.0f, 0); // Center grid
+        // Space taken by UI panels
+        float leftPanelWidth = 200; // Example width in pixels for left panel
+        float topPanelHeight = 70; // Example height in pixels for top panel
+
+        // Convert panel dimensions from pixels to world units
+        float leftPanelWidthWorld = leftPanelWidth / Camera.main.pixelWidth * Camera.main.orthographicSize * Camera.main.aspect * 2;
+        float topPanelHeightWorld = topPanelHeight / Camera.main.pixelHeight * Camera.main.orthographicSize * 2;
+
+        float cameraHeight = 2f * Camera.main.orthographicSize - topPanelHeightWorld;
+        float cameraWidth = 2f * Camera.main.orthographicSize * Camera.main.aspect - leftPanelWidthWorld;
+
+        // Retrieve the native sprite size
+        SpriteRenderer spriteRenderer = cardPrefab.GetComponent<SpriteRenderer>();
+        Vector2 spriteSize = spriteRenderer.sprite.bounds.size;
+
+        // Define minimum padding
+        float minPadding = 0.1f; // World units
+
+        // Calculate the scaling factor that allows the card to fit the panel correctly with padding
+        float scaleFactorWidth = (cameraWidth - (cols + 1) * minPadding) / (cols * spriteSize.x);
+        float scaleFactorHeight = (cameraHeight - (rows + 1) * minPadding) / (rows * spriteSize.y);
+        float scaleFactor = Mathf.Min(scaleFactorWidth, scaleFactorHeight);
+
+        float cardWidth = spriteSize.x * scaleFactor;
+        float cardHeight = spriteSize.y * scaleFactor;
+        float cardSpacingX = (cameraWidth - (cardWidth * cols)) / (cols + 1);
+        float cardSpacingY = (cameraHeight - (cardHeight * rows)) / (rows + 1);
+
+        Vector3 startPos = new Vector3((-Camera.main.orthographicSize * Camera.main.aspect + leftPanelWidthWorld + cardSpacingX + cardWidth / 2),
+                                       (Camera.main.orthographicSize - topPanelHeightWorld - cardSpacingY - cardHeight / 2), 0);
 
         for (int i = 0; i < cardIDs.Count; i++)
         {
             int row = i / cols;
             int col = i % cols;
 
-            Vector3 cardPosition = startPos + new Vector3(col * spacingX, -row * spacingY, 0);
+            Vector3 cardPosition = startPos + new Vector3(col * (cardWidth + cardSpacingX), -row * (cardHeight + cardSpacingY), 0);
             GameObject newCard = Instantiate(cardPrefab, cardPosition, Quaternion.identity, cardContainer);
+            newCard.transform.localScale = new Vector3(scaleFactor, scaleFactor, 1); // Apply uniform scaling
 
             Card cardScript = newCard.GetComponent<Card>();
             cardScript.SetCard(cardIDs[i], cardData.cardSprites[cardIDs[i]]);
         }
     }
+
 
     public void CardFlipped(Card card)
     {
