@@ -15,7 +15,7 @@ public class Card : MonoBehaviour
         if (isMatched || isFlipped) return;  // Ignore if already matched
 
         Debug.Log("Clicked Card");
-        FlipCard();  // Call FlipCard() instead of handling everything in OnMouseDown
+        FlipCard();  
         GameManager.Instance.CardFlipped(this); // Notify GameManager
     }
 

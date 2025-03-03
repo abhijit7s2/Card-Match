@@ -248,7 +248,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c5c67d35dd9c3c41b47a6f672e925a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  flipSound: {fileID: 8300000, guid: 4ea2b93656fb91d408d3f0064d14973f, type: 3}
+  flipSound: {fileID: 8300000, guid: 1e28e03272554694bb4212100567a182, type: 3}
   matchSound: {fileID: 8300000, guid: d8fec7a6e539ff5479af49e3f33a4033, type: 3}
   mismatchSound: {fileID: 8300000, guid: 89e40e0ebb34a7f43aaa4c1ee2de8673, type: 3}
   gameOverSound: {fileID: 8300000, guid: 0cadefb3ff9354840941ac20cd402c4a, type: 3}
