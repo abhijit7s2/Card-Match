@@ -62,4 +62,9 @@ public class Card : MonoBehaviour
     {
         isMatched = true;
     }
+    public bool IsMatched
+    {
+        get { return isMatched; }
+    }
+
 }

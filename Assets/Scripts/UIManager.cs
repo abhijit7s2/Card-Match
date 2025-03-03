@@ -38,4 +38,16 @@ public class UIManager : MonoBehaviour
         victoryText.gameObject.SetActive(true);
         victoryText.text = "Victory! You Won!";
     }
+
+    /// <summary>
+    /// Called when the back button is pressed.
+    /// Hides in-game UI elements and activates the main menu panel.
+    /// </summary>
+    public void BackToMainMenu()
+    {
+        // Hide any in-game UI elements as needed (e.g., victory text)
+        victoryText.gameObject.SetActive(false);
+        // Activate the main menu panel using MenuManager.
+        MenuManager.Instance.ShowMainMenu();
+    }
 }
