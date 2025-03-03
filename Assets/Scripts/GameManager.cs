@@ -208,10 +208,16 @@ public class GameManager : MonoBehaviour
                 if (_currentMatches == _totalMatches)
                 {
                     UIManager.Instance.ShowVictory();
+                    AudioManager.Instance.PlayGameOverSound();
+                    break;
                 }
+                AudioManager.Instance.PlayMatchSound();
+
             }
             else
             {
+                AudioManager.Instance.PlayMismatchSound();
+
                 card1.FlipCard();
                 card2.FlipCard();
             }

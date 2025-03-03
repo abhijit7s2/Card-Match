@@ -29,6 +29,7 @@ public class Card : MonoBehaviour
 
     IEnumerator FlipAnimation()
     {
+        AudioManager.Instance.PlayFlipSound();
         float duration = 0.2f;
         Vector3 startScale = transform.localScale;
         Vector3 endScale = new Vector3(0, startScale.y, startScale.z);
