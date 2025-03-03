@@ -9,6 +9,7 @@ public class UIManager : MonoBehaviour
     public TMP_Text matchText;
     public TMP_Text turnText;
     public TMP_Text victoryText;
+    public TMP_Text scoreText;
 
     private void Awake()
     {
@@ -32,7 +33,10 @@ public class UIManager : MonoBehaviour
     {
         turnText.text = "Turns: " + turnsTaken;
     }
-
+    public void UpdateScoreText(int score)
+    {
+        scoreText.text = "Score: " + score;
+    }
     public void ShowVictory()
     {
         victoryText.gameObject.SetActive(true);

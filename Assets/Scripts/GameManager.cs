@@ -16,6 +16,10 @@ public class GameManager : MonoBehaviour
     private int _totalMatches;
     private int _currentMatches = 0;
     private int _turnsTaken = 0;
+    private int _score = 0;
+
+    [SerializeField] private int baseScore = 1000;
+    [SerializeField] private int turnPenalty = 50;
 
     private int rows;
     private int columns;
@@ -51,6 +55,16 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public int Score
+    {
+        get { return _score; }
+        set
+        {
+            _score = value;
+            UIManager.Instance.UpdateScoreText(_score);
+        }
+    }
+
     private void Awake()
     {
         if (Instance == null)
@@ -60,37 +74,34 @@ public class GameManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-
     }
 
-    /// <summary>
-    /// Set the basic game parameters.
-    /// </summary>
     public void SetGameParameters(int rows, int columns)
     {
         this.rows = rows;
         this.columns = columns;
-        TotalMatches = (rows * columns) / 2;
-        // Reset counters when starting a new game
         _currentMatches = 0;
         _turnsTaken = 0;
+        TotalMatches = (rows * columns) / 2;
+
         UIManager.Instance.UpdateMatchText(_currentMatches, _totalMatches);
         UIManager.Instance.UpdateTurnText(_turnsTaken);
+        UIManager.Instance.UpdateScoreText(Score);
+
     }
 
-    /// <summary>
-    /// Generates the cards. If savedCardStates is provided, it uses that state,
-    /// otherwise it creates a new shuffled set.
-    /// </summary>
     public void GenerateCards(int rows, int cols, List<CardState> savedCardStates = null)
     {
-        // Clear any existing cards
         cardContainer.DestroyChildren();
         List<int> cardIDs = new List<int>();
 
         if (savedCardStates == null)
         {
-            // Create new card IDs for a new game
+            _currentMatches = 0;
+            _turnsTaken = 0;
+            UIManager.Instance.UpdateMatchText(_currentMatches, _totalMatches);
+            UIManager.Instance.UpdateTurnText(_turnsTaken);
+
             for (int i = 0; i < (rows * cols) / 2; i++)
             {
                 cardIDs.Add(i);
@@ -100,42 +111,31 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            // When loading, use the saved card states (which preserves order)
             foreach (CardState cs in savedCardStates)
             {
                 cardIDs.Add(cs.cardID);
             }
         }
 
-        // Create and position cards on screen
         CreateAndPlaceCards(cardIDs, rows, cols, savedCardStates);
     }
 
-    /// <summary>
-    /// Handles the instantiation, scaling, and positioning of cards.
-    /// If savedCardStates is provided, each card's state is restored.
-    /// </summary>
     private void CreateAndPlaceCards(List<int> cardIDs, int rows, int cols, List<CardState> savedCardStates = null)
     {
-        // Space taken by UI panels (example values)
-        float leftPanelWidth = 200f; // in pixels
-        float topPanelHeight = 70f;  // in pixels
+        float leftPanelWidth = 200f;
+        float topPanelHeight = 70f;
 
-        // Convert panel dimensions from pixels to world units using Camera settings
         float leftPanelWidthWorld = leftPanelWidth / Camera.main.pixelWidth * Camera.main.orthographicSize * Camera.main.aspect * 2;
         float topPanelHeightWorld = topPanelHeight / Camera.main.pixelHeight * Camera.main.orthographicSize * 2;
 
         float cameraHeight = 2f * Camera.main.orthographicSize - topPanelHeightWorld;
         float cameraWidth = 2f * Camera.main.orthographicSize * Camera.main.aspect - leftPanelWidthWorld;
 
-        // Get the native sprite size from the card prefab
         SpriteRenderer spriteRenderer = cardPrefab.GetComponent<SpriteRenderer>();
         Vector2 spriteSize = spriteRenderer.sprite.bounds.size;
 
-        // Define a minimum padding between cards (in world units)
         float minPadding = 0.1f;
 
-        // Calculate scaling factor so that cards (plus padding) fit within available space
         float scaleFactorWidth = (cameraWidth - (cols + 1) * minPadding) / (cols * spriteSize.x);
         float scaleFactorHeight = (cameraHeight - (rows + 1) * minPadding) / (rows * spriteSize.y);
         float scaleFactor = Mathf.Min(scaleFactorWidth, scaleFactorHeight);
@@ -160,10 +160,8 @@ public class GameManager : MonoBehaviour
             newCard.transform.localScale = new Vector3(scaleFactor, scaleFactor, 1);
 
             Card cardScript = newCard.GetComponent<Card>();
-            // Set the card sprite and id from CardData
             cardScript.SetCard(cardIDs[i], cardData.cardSprites[cardIDs[i]]);
 
-            // If we're loading a saved state, restore each card's specific state
             if (savedCardStates != null)
             {
                 CardState state = savedCardStates[i];
@@ -176,12 +174,9 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Called by individual cards when they are flipped.
-    /// </summary>
     public void CardFlipped(Card card)
     {
-        if (flipQueue.Contains(card)) return; // Prevent flipping the same card twice
+        if (flipQueue.Contains(card)) return;
 
         flipQueue.Enqueue(card);
 
@@ -221,12 +216,10 @@ public class GameManager : MonoBehaviour
                 card2.FlipCard();
             }
         }
+        CalculateScore();
         isChecking = false;
     }
 
-    /// <summary>
-    /// Shuffles a list of integers using the Fisher–Yates algorithm.
-    /// </summary>
     void Shuffle(List<int> list)
     {
         for (int i = list.Count - 1; i > 0; i--)
@@ -236,9 +229,11 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Saves the game state, including parameters and each card's state.
-    /// </summary>
+    private void CalculateScore()
+    {
+        Score = Mathf.Max(0, baseScore - (_turnsTaken * turnPenalty));
+    }
+
     public void SaveGameState()
     {
         PlayerPrefs.SetInt("Rows", rows);
@@ -246,6 +241,8 @@ public class GameManager : MonoBehaviour
         PlayerPrefs.SetInt("CurrentMatches", _currentMatches);
         PlayerPrefs.SetInt("TotalMatches", _totalMatches);
         PlayerPrefs.SetInt("TurnsTaken", _turnsTaken);
+        PlayerPrefs.SetInt("Score", Score);
+
 
         int cardCount = cardContainer.childCount;
         PlayerPrefs.SetInt("CardCount", cardCount);
@@ -261,9 +258,6 @@ public class GameManager : MonoBehaviour
         PlayerPrefs.Save();
     }
 
-    /// <summary>
-    /// Loads the game state, reconstructing the card order and each card's state.
-    /// </summary>
     public void LoadGameState()
     {
         if (PlayerPrefs.HasKey("Rows"))
@@ -272,7 +266,6 @@ public class GameManager : MonoBehaviour
             int savedColumns = PlayerPrefs.GetInt("Columns");
             SetGameParameters(savedRows, savedColumns);
 
-            // Build saved card states from PlayerPrefs
             int cardCount = PlayerPrefs.GetInt("CardCount");
             List<CardState> savedStates = new List<CardState>();
             for (int i = 0; i < cardCount; i++)
@@ -287,17 +280,17 @@ public class GameManager : MonoBehaviour
             _currentMatches = PlayerPrefs.GetInt("CurrentMatches");
             _totalMatches = PlayerPrefs.GetInt("TotalMatches");
             _turnsTaken = PlayerPrefs.GetInt("TurnsTaken");
+            Score = PlayerPrefs.GetInt("Score");
+
 
             UIManager.Instance.UpdateMatchText(_currentMatches, _totalMatches);
             UIManager.Instance.UpdateTurnText(_turnsTaken);
             MenuManager.Instance.HideMainMenu();
-
         }
         else
         {
             Debug.Log("No saved game to load.");
             MenuManager.Instance.DisableLoadButton();
-
         }
     }
 }
