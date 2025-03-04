@@ -16,10 +16,12 @@ public class GameManager : MonoBehaviour
     private int _totalMatches;
     private int _currentMatches = 0;
     private int _turnsTaken = 0;
-    private int _score = 0;
+    private int _score = 5000;
 
-    [SerializeField] private int baseScore = 1000;
+    [SerializeField] private int baseScore = 5000;
     [SerializeField] private int turnPenalty = 50;
+    public RectTransform rightPanelRect;
+
 
     private int rows;
     private int columns;
@@ -122,20 +124,25 @@ public class GameManager : MonoBehaviour
 
     private void CreateAndPlaceCards(List<int> cardIDs, int rows, int cols, List<CardState> savedCardStates = null)
     {
-        float leftPanelWidth = 200f;
-        float topPanelHeight = 70f;
+        // Get the right panel's width in canvas (screen) pixels
+        float panelPixelWidth = rightPanelRect.rect.width;
 
-        float leftPanelWidthWorld = leftPanelWidth / Camera.main.pixelWidth * Camera.main.orthographicSize * Camera.main.aspect * 2;
-        float topPanelHeightWorld = topPanelHeight / Camera.main.pixelHeight * Camera.main.orthographicSize * 2;
+        // Convert that pixel width to world units. 
+        // This conversion is based on the camera's orthographic size and aspect ratio.
+        float panelWidthWorld = panelPixelWidth / Screen.width * (2f * Camera.main.orthographicSize * Camera.main.aspect);
 
+        float topPanelHeight = 70f; // in pixels (for top UI, similar conversion applies)
+        float topPanelHeightWorld = topPanelHeight / Screen.height * (2f * Camera.main.orthographicSize);
+
+        // Now compute available game width using the panel's world unit width.
+        float cameraWidth = 2f * Camera.main.orthographicSize * Camera.main.aspect - panelWidthWorld;
         float cameraHeight = 2f * Camera.main.orthographicSize - topPanelHeightWorld;
-        float cameraWidth = 2f * Camera.main.orthographicSize * Camera.main.aspect - leftPanelWidthWorld;
 
+        // Get the native sprite size from the card prefab.
         SpriteRenderer spriteRenderer = cardPrefab.GetComponent<SpriteRenderer>();
         Vector2 spriteSize = spriteRenderer.sprite.bounds.size;
 
         float minPadding = 0.1f;
-
         float scaleFactorWidth = (cameraWidth - (cols + 1) * minPadding) / (cols * spriteSize.x);
         float scaleFactorHeight = (cameraHeight - (rows + 1) * minPadding) / (rows * spriteSize.y);
         float scaleFactor = Mathf.Min(scaleFactorWidth, scaleFactorHeight);
@@ -145,8 +152,9 @@ public class GameManager : MonoBehaviour
         float cardSpacingX = (cameraWidth - (cardWidth * cols)) / (cols + 1);
         float cardSpacingY = (cameraHeight - (cardHeight * rows)) / (rows + 1);
 
+        // Compute the starting position for the card grid.
         Vector3 startPos = new Vector3(
-            -Camera.main.orthographicSize * Camera.main.aspect + leftPanelWidthWorld + cardSpacingX + cardWidth / 2,
+            -Camera.main.orthographicSize * Camera.main.aspect + panelWidthWorld + cardSpacingX + cardWidth / 2,
             Camera.main.orthographicSize - topPanelHeightWorld - cardSpacingY - cardHeight / 2,
             0);
 
